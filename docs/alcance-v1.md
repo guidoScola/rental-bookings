@@ -29,7 +29,7 @@ Hoy las reservas se toman por WhatsApp o por teléfono y se anotan en una libret
 - Tiene una persona a cargo, con nombre obligatorio y teléfono opcional.
 - Las noches se calculan a partir de las fechas; no se cargan.
 - El sistema sugiere un precio igual a noches × precio por noche (este último lo carga el dueño). El dueño puede modificarlo, y la reserva guarda el precio acordado.
-- La fecha de cambio de ropa blanca es opcional. Si se carga, tiene que estar entre la fecha de ingreso y la de egreso. Hay como máximo un cambio por estadía.
+- La fecha de cambio de ropa blanca es opcional. Si se carga, tiene que ser posterior a la fecha de ingreso y anterior a la de egreso. Hay como máximo un cambio por estadía.
 - Puede tener notas libres.
 
 ### Marcar una reserva como pagada

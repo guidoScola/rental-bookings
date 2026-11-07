@@ -26,7 +26,7 @@ Tablas y columnas en inglés. Base de datos: PostgreSQL.
 | check_out | date | obligatorio, `> check_in` |
 | price | numeric(10, 2) | obligatorio, `>= 0` |
 | payment_method | text | opcional, `'cash'` o `'transfer'`; si tiene valor, la reserva está pagada |
-| linen_change_date | date | opcional, entre `check_in` y `check_out` |
+| linen_change_date | date | opcional, `> check_in` y `< check_out` (no el día de ingreso ni el de egreso) |
 | cancelled_at | date | opcional; si tiene valor, la reserva está cancelada |
 | notes | text | opcional |
 
