@@ -4,3 +4,5 @@ __pycache__/
 .vscode/
 CLAUDE.md
 APRENDIZAJE.md
+.atl/
+.claude/
