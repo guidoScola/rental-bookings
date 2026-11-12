@@ -7,6 +7,24 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 PaymentMethod = Literal["cash", "transfer"]
 
 
+class ApartmentCreate(BaseModel):
+    name: str = Field(min_length=1)
+    address: str = Field(min_length=1)
+    floor: str | None = None
+    max_guests: int = Field(gt=0)
+
+
+class ApartmentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    address: str
+    floor: str | None
+    max_guests: int
+    deactivated_at: date | None
+
+
 class BookingCreate(BaseModel):
     apartment_id: int
     guest_name: str = Field(min_length=1)
