@@ -1,14 +1,23 @@
 from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.apartments import router as apartments_router
+from app.auth import require_user
+from app.auth import router as auth_router
 from app.bookings import router as bookings_router
+from app.config import settings
 from app.db import get_session
 
 app = FastAPI(title="Rental Bookings")
-app.include_router(apartments_router)
-app.include_router(bookings_router)
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key, same_site="lax")
+
+app.include_router(auth_router)
+# Everything except /health, /login and /logout requires a logged-in user.
+protected = [Depends(require_user)]
+app.include_router(apartments_router, dependencies=protected)
+app.include_router(bookings_router, dependencies=protected)
 
 
 @app.get("/health")
