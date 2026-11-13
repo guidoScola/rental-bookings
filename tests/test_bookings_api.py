@@ -26,7 +26,7 @@ def payload(apartment):
 
 
 def create(client, payload, **changes):
-    return client.post("/bookings", json={**payload, **changes})
+    return client.post("/api/bookings", json={**payload, **changes})
 
 
 # --- create ---------------------------------------------------------------
@@ -99,14 +99,14 @@ def test_deactivated_apartment_returns_422(client, session, payload):
 def test_get_booking(client, payload):
     booking_id = create(client, payload).json()["id"]
 
-    response = client.get(f"/bookings/{booking_id}")
+    response = client.get(f"/api/bookings/{booking_id}")
 
     assert response.status_code == 200
     assert response.json()["guest_name"] == "Ana"
 
 
 def test_get_missing_booking_returns_404(client):
-    assert client.get("/bookings/999999").status_code == 404
+    assert client.get("/api/bookings/999999").status_code == 404
 
 
 def test_list_shows_current_and_upcoming_but_not_past_or_cancelled(client, payload):
@@ -114,9 +114,11 @@ def test_list_shows_current_and_upcoming_but_not_past_or_cancelled(client, paylo
     current = create(client, payload, check_in=day(-1), check_out=day(2)).json()["id"]
     past = create(client, payload, check_in=day(-10), check_out=day(-5)).json()["id"]
     cancelled = create(client, payload, check_in=day(20), check_out=day(22)).json()["id"]
-    client.post(f"/bookings/{cancelled}/cancel")
+    client.post(f"/api/bookings/{cancelled}/cancel")
 
-    ids = [b["id"] for b in client.get("/bookings").json()]
+    mine = {upcoming, current, past, cancelled}
+    # The dev database may already hold real bookings: only look at ours.
+    ids = [b["id"] for b in client.get("/api/bookings").json() if b["id"] in mine]
 
     assert ids == [current, upcoming]  # ordered by check_in
     assert past not in ids
@@ -127,8 +129,14 @@ def test_list_filters_by_status(client, payload):
     upcoming = create(client, payload).json()["id"]
     current = create(client, payload, check_in=day(-1), check_out=day(2)).json()["id"]
 
-    current_ids = [b["id"] for b in client.get("/bookings?status=current").json()]
-    upcoming_ids = [b["id"] for b in client.get("/bookings?status=upcoming").json()]
+    mine = {upcoming, current}
+
+    def ids_for(status):
+        bookings = client.get(f"/api/bookings?status={status}").json()
+        return [b["id"] for b in bookings if b["id"] in mine]
+
+    current_ids = ids_for("current")
+    upcoming_ids = ids_for("upcoming")
 
     assert current_ids == [current]
     assert upcoming_ids == [upcoming]
@@ -140,7 +148,7 @@ def test_list_filters_by_status(client, payload):
 def test_mark_booking_as_paid(client, payload):
     booking_id = create(client, payload).json()["id"]
 
-    response = client.patch(f"/bookings/{booking_id}", json={"payment_method": "cash"})
+    response = client.patch(f"/api/bookings/{booking_id}", json={"payment_method": "cash"})
 
     assert response.status_code == 200
     assert response.json()["payment_method"] == "cash"
@@ -151,7 +159,7 @@ def test_update_into_overlap_returns_409(client, payload):
     create(client, payload)
     other = create(client, payload, check_in=day(20), check_out=day(22)).json()["id"]
 
-    response = client.patch(f"/bookings/{other}", json={"check_in": day(13)})
+    response = client.patch(f"/api/bookings/{other}", json={"check_in": day(13)})
 
     assert response.status_code == 409
 
@@ -159,17 +167,17 @@ def test_update_into_overlap_returns_409(client, payload):
 def test_failed_update_leaves_booking_unchanged(client, payload):
     booking_id = create(client, payload).json()["id"]
 
-    response = client.patch(f"/bookings/{booking_id}", json={"guest_count": 9})
+    response = client.patch(f"/api/bookings/{booking_id}", json={"guest_count": 9})
 
     assert response.status_code == 422
-    assert client.get(f"/bookings/{booking_id}").json()["guest_count"] == 2
+    assert client.get(f"/api/bookings/{booking_id}").json()["guest_count"] == 2
 
 
 def test_update_cancelled_booking_returns_409(client, payload):
     booking_id = create(client, payload).json()["id"]
-    client.post(f"/bookings/{booking_id}/cancel")
+    client.post(f"/api/bookings/{booking_id}/cancel")
 
-    response = client.patch(f"/bookings/{booking_id}", json={"notes": "late"})
+    response = client.patch(f"/api/bookings/{booking_id}", json={"notes": "late"})
 
     assert response.status_code == 409
 
@@ -180,7 +188,7 @@ def test_update_cancelled_booking_returns_409(client, payload):
 def test_cancel_booking_sets_date_and_frees_the_nights(client, payload):
     booking_id = create(client, payload).json()["id"]
 
-    response = client.post(f"/bookings/{booking_id}/cancel")
+    response = client.post(f"/api/bookings/{booking_id}/cancel")
 
     assert response.status_code == 200
     assert response.json()["cancelled_at"] == TODAY.isoformat()
@@ -189,6 +197,6 @@ def test_cancel_booking_sets_date_and_frees_the_nights(client, payload):
 
 def test_cancel_twice_returns_409(client, payload):
     booking_id = create(client, payload).json()["id"]
-    client.post(f"/bookings/{booking_id}/cancel")
+    client.post(f"/api/bookings/{booking_id}/cancel")
 
-    assert client.post(f"/bookings/{booking_id}/cancel").status_code == 409
+    assert client.post(f"/api/bookings/{booking_id}/cancel").status_code == 409

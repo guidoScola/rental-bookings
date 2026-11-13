@@ -8,7 +8,7 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from app.auth import hash_password, require_user  # noqa: E402
+from app.auth import hash_password, require_user, require_user_page  # noqa: E402
 from app.db import engine, get_session  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Apartment, AppUser  # noqa: E402
@@ -63,6 +63,7 @@ def client(anon_client: TestClient) -> TestClient:
     itself is tested in test_auth.py.
     """
     app.dependency_overrides[require_user] = lambda: 1
+    app.dependency_overrides[require_user_page] = lambda: 1
     return anon_client
 
 

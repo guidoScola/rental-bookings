@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% macro booking_card(b) %}
+<a class="card" href="/bookings/{{ b.id }}">
+  <div class="row">
+    <strong>{{ b.guest_name }}</strong>
+    {% if b.payment_method == "cash" %}<span class="tag paid">Pagada · efectivo</span>
+    {% elif b.payment_method == "transfer" %}<span class="tag paid">Pagada · transferencia</span>
+    {% else %}<span class="tag unpaid">Sin pagar</span>{% endif %}
+  </div>
+  <div>{{ b.check_in | fdate }} → {{ b.check_out | fdate }} · {{ (b.check_out - b.check_in).days }} noches · {{ b.guest_count }} personas</div>
+  <div class="muted">
+    {{ names[b.apartment_id] }} · {{ b.price | money }}
+    {% if b.linen_change_date %} · Ropa blanca: {{ b.linen_change_date | fdate }}{% endif %}
+    {% if b.guest_phone %} · Tel: {{ b.guest_phone }}{% endif %}
+  </div>
+</a>
+{% endmacro %}
+{% block content %}
+<h1>Reservas</h1>
+
+<h2>En curso</h2>
+{% for b in current %}{{ booking_card(b) }}{% else %}<p class="muted">No hay huéspedes ahora.</p>{% endfor %}
+
+<h2>Próximas</h2>
+{% for b in upcoming %}{{ booking_card(b) }}{% else %}<p class="muted">No hay reservas próximas.</p>{% endfor %}
+
+<a class="btn" href="/bookings/new">+ Nueva reserva</a>
+{% endblock %}

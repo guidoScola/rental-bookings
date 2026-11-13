@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import get_session
 from app.models import AppUser
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/api", tags=["auth"])
 
 # Used when the username does not exist, so a wrong username takes as long as a
 # wrong password. Otherwise response time would reveal which usernames exist.
@@ -31,22 +31,41 @@ class LoginRequest(BaseModel):
 
 
 def require_user(request: Request) -> int:
-    """Dependency for protected routes: the logged-in user's id, or 401."""
+    """Dependency for protected API routes: the logged-in user's id, or 401."""
     user_id = request.session.get("user_id")
     if user_id is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not logged in")
     return user_id
 
 
+def require_user_page(request: Request) -> int:
+    """Same as require_user, but for pages: send the browser to the login form."""
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status.HTTP_303_SEE_OTHER, headers={"Location": "/login"})
+    return user_id
+
+
+def authenticate(session: Session, username: str, password: str) -> AppUser | None:
+    """The user if username and password match, otherwise None (never says which failed)."""
+    user = session.scalar(select(AppUser).where(AppUser.username == username))
+    password_hash = user.password_hash if user else _DUMMY_HASH
+    if not verify_password(password, password_hash) or user is None:
+        return None
+    return user
+
+
+def start_session(request: Request, user: AppUser) -> None:
+    request.session.clear()  # drop anything from before the login
+    request.session["user_id"] = user.id
+
+
 @router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
 def login(data: LoginRequest, request: Request, session: Session = Depends(get_session)) -> Response:
-    user = session.scalar(select(AppUser).where(AppUser.username == data.username))
-    password_hash = user.password_hash if user else _DUMMY_HASH
-    if not verify_password(data.password, password_hash) or user is None:
-        # Same message for both cases: do not tell which one was wrong.
+    user = authenticate(session, data.username, data.password)
+    if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid username or password")
-    request.session.clear()
-    request.session["user_id"] = user.id
+    start_session(request, user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

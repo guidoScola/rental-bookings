@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Confirmar baja{% endblock %}
+{% block content %}
+<h1>Dar de baja {{ apartment.name }}</h1>
+<div class="error">
+  Este departamento tiene {{ bookings | length }} reserva(s) futura(s). Si confirmás la baja, se cancelan.
+</div>
+
+{% for b in bookings %}
+<div class="card">
+  <strong>{{ b.guest_name }}</strong> · {{ b.check_in | fdate }} → {{ b.check_out | fdate }}
+  {% if b.guest_phone %}<div class="muted">Tel: {{ b.guest_phone }} (avisale al huésped)</div>{% endif %}
+</div>
+{% endfor %}
+
+<form method="post" action="/apartments/{{ apartment.id }}/deactivate">
+  <input type="hidden" name="confirm" value="true">
+  <button class="btn danger" type="submit">Dar de baja y cancelar las reservas</button>
+  <a class="btn secondary" href="/apartments">Volver sin cambios</a>
+</form>
+{% endblock %}

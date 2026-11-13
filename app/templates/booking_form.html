@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{% if booking %}Reserva de {{ booking.guest_name }}{% else %}Nueva reserva{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if booking %}Reserva de {{ booking.guest_name }}{% else %}Nueva reserva{% endif %}</h1>
+
+<form method="post" class="stack card" action="{% if booking %}/bookings/{{ booking.id }}{% else %}/bookings/new{% endif %}">
+  {% if booking %}
+    <p class="muted">Departamento: <strong>{{ apartment.name }}</strong>
+      {% if booking.cancelled_at %} · <span class="tag off">Cancelada el {{ booking.cancelled_at | fdate }}</span>{% endif %}</p>
+  {% else %}
+    <label for="apartment_id">Departamento</label>
+    <select id="apartment_id" name="apartment_id" required>
+      {% for a in apartments %}
+        <option value="{{ a.id }}" {% if values.apartment_id == a.id|string %}selected{% endif %}>{{ a.name }} (hasta {{ a.max_guests }} personas)</option>
+      {% else %}
+        <option value="">Primero cargá un departamento</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+
+  <div class="grid">
+    <div>
+      <label for="guest_name">Huésped</label>
+      <input id="guest_name" name="guest_name" value="{{ values.guest_name or '' }}" required>
+    </div>
+    <div>
+      <label for="guest_phone">Teléfono (opcional)</label>
+      <input id="guest_phone" name="guest_phone" type="tel" value="{{ values.guest_phone or '' }}">
+    </div>
+    <div>
+      <label for="guest_count">Personas</label>
+      <input id="guest_count" name="guest_count" type="number" min="1" value="{{ values.guest_count or '' }}" required>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label for="check_in">Ingreso</label>
+      <input id="check_in" name="check_in" type="date" value="{{ values.check_in or '' }}" required>
+    </div>
+    <div>
+      <label for="check_out">Egreso</label>
+      <input id="check_out" name="check_out" type="date" value="{{ values.check_out or '' }}" required>
+    </div>
+    <div>
+      <label>Noches</label>
+      <input id="nights" disabled>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label for="per_night">Precio por noche (para calcular)</label>
+      <input id="per_night" type="number" min="0" step="0.01">
+    </div>
+    <div>
+      <label for="price">Precio total acordado</label>
+      <input id="price" name="price" type="number" min="0" step="0.01" value="{{ values.price or '' }}" required>
+    </div>
+    <div>
+      <label for="payment_method">Pago</label>
+      <select id="payment_method" name="payment_method">
+        <option value="">Sin pagar</option>
+        <option value="cash" {% if values.payment_method == "cash" %}selected{% endif %}>Pagada · efectivo</option>
+        <option value="transfer" {% if values.payment_method == "transfer" %}selected{% endif %}>Pagada · transferencia</option>
+      </select>
+    </div>
+  </div>
+
+  <label for="linen_change_date">Cambio de ropa blanca (opcional)</label>
+  <input id="linen_change_date" name="linen_change_date" type="date" value="{{ values.linen_change_date or '' }}">
+
+  <label for="notes">Notas</label>
+  <textarea id="notes" name="notes" rows="3">{{ values.notes or '' }}</textarea>
+
+  {% if not (booking and booking.cancelled_at) %}
+    <button class="btn" type="submit">Guardar</button>
+  {% endif %}
+  <a class="btn secondary" href="/">Volver</a>
+</form>
+
+{% if booking and not booking.cancelled_at %}
+<form method="post" action="/bookings/{{ booking.id }}/cancel"
+      onsubmit='return confirm("¿Cancelar la reserva de " + {{ booking.guest_name | tojson }} + "? Las noches quedan libres.");'>
+  <button class="btn danger" type="submit">Cancelar reserva</button>
+</form>
+{% endif %}
+
+<script>
+  // Shows the nights and suggests total = nights x price per night.
+  // Only a suggestion: the total stays editable and is what gets saved.
+  const checkIn = document.getElementById("check_in");
+  const checkOut = document.getElementById("check_out");
+  const perNight = document.getElementById("per_night");
+  const price = document.getElementById("price");
+  const nightsBox = document.getElementById("nights");
+
+  function nights() {
+    if (!checkIn.value || !checkOut.value) return null;
+    const diff = (new Date(checkOut.value) - new Date(checkIn.value)) / 86400000;
+    return diff > 0 ? diff : null;
+  }
+
+  function update(fromPerNight) {
+    const n = nights();
+    nightsBox.value = n ?? "";
+    if (fromPerNight && n && perNight.value) price.value = (n * Number(perNight.value)).toFixed(2);
+  }
+
+  checkIn.addEventListener("change", () => update(true));
+  checkOut.addEventListener("change", () => update(true));
+  perNight.addEventListener("input", () => update(true));
+  update(false);
+</script>
+{% endblock %}

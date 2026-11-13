@@ -10,7 +10,7 @@ from app.db import get_session
 from app.models import Apartment, Booking
 from app.schemas import BookingCreate, BookingRead, BookingUpdate
 
-router = APIRouter(prefix="/bookings", tags=["bookings"])
+router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
 
 def validate_booking(session: Session, booking: Booking) -> None:

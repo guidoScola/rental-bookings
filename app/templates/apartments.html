@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Departamentos{% endblock %}
+{% block content %}
+<h1>Departamentos</h1>
+
+{% for a in apartments %}
+<div class="card">
+  <div class="row">
+    <strong>{{ a.name }}</strong>
+    {% if a.deactivated_at %}<span class="tag off">Dado de baja el {{ a.deactivated_at | fdate }}</span>{% endif %}
+  </div>
+  <div class="muted">{{ a.address }}{% if a.floor %} · Piso {{ a.floor }}{% endif %} · Hasta {{ a.max_guests }} personas</div>
+  {% if not a.deactivated_at %}
+  <form method="post" action="/apartments/{{ a.id }}/deactivate"
+        onsubmit='return confirm("¿Dar de baja " + {{ a.name | tojson }} + "? No se podrán cargar más reservas.");'>
+    <button class="btn secondary" type="submit">Dar de baja</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+<p class="muted">Todavía no hay departamentos.</p>
+{% endfor %}
+
+<h2>Cargar departamento</h2>
+<form method="post" action="/apartments" class="stack card">
+  <div class="grid">
+    <div>
+      <label for="name">Nombre</label>
+      <input id="name" name="name" value="{{ values.name or '' }}" required>
+    </div>
+    <div>
+      <label for="address">Dirección</label>
+      <input id="address" name="address" value="{{ values.address or '' }}" required>
+    </div>
+    <div>
+      <label for="floor">Piso (opcional)</label>
+      <input id="floor" name="floor" value="{{ values.floor or '' }}">
+    </div>
+    <div>
+      <label for="max_guests">Máximo de huéspedes</label>
+      <input id="max_guests" name="max_guests" type="number" min="1" value="{{ values.max_guests or '' }}" required>
+    </div>
+  </div>
+  <button class="btn" type="submit">Cargar</button>
+</form>
+{% endblock %}

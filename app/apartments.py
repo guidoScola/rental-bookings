@@ -8,7 +8,7 @@ from app.db import get_session
 from app.models import Apartment, Booking
 from app.schemas import ApartmentCreate, ApartmentRead
 
-router = APIRouter(prefix="/apartments", tags=["apartments"])
+router = APIRouter(prefix="/api/apartments", tags=["apartments"])
 
 
 def get_apartment_or_404(session: Session, apartment_id: int) -> Apartment:
